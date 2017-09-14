@@ -1,0 +1,59 @@
+## 1. Merging the training and the test sets to create one data set:
+
+TrainData = read.table('./train/subject_train.txt',header=FALSE)
+xTrain = read.table('./train/x_train.txt',header=FALSE)
+yTrain = read.table('./train/y_train.txt',header=FALSE)
+
+TestData = read.table('./test/subject_test.txt',header=FALSE)
+xTest = read.table('./test/x_test.txt',header=FALSE)
+yTest = read.table('./test/y_test.txt',header=FALSE)
+
+yDataSet <- rbind(yTrain, yTest)
+xDataSet <- rbind(xTrain, xTest)
+
+TotalDataset <- rbind(TrainData, TestData)
+
+## 2. Extracts only the measurements on the mean and 
+##    standard deviation for each measurement:
+
+mean_std_TrainData <- xDataSet[, grep("-(mean|std)\\(\\)", read.table("features.txt")[, 2])]
+names(mean_std_TrainData) <- read.table("features.txt")[grep("-(mean|std)\\(\\)", read.table("features.txt")[, 2]), 2]
+View(mean_std_TrainData)
+dim(mean_std_TrainData)
+
+## 3. Using descriptive activity names to name the activities in the data set:
+
+yDataSet[, 1] <- read.table("activity_labels.txt")[yDataSet[, 1], 2]
+names(yDataSet) <- "Activity"
+View(yDataSet)
+
+## 4. Appropriately labeling the data set with descriptive variable names:
+
+names(TotalDataset) <- "Subject"
+summary(TotalDataset)
+       
+ #    Organizing and combining datasets:
+
+singleDataSet <- cbind(mean_std_TrainData, yDataSet, TotalDataset)
+
+#     Defining descriptive names:
+
+
+names(singleDataSet) <- make.names(names(singleDataSet))
+names(singleDataSet) <- gsub('Acc',"Acceleration",names(singleDataSet))
+names(singleDataSet) <- gsub('GyroJerk',"AngularAcceleration",names(singleDataSet))
+names(singleDataSet) <- gsub('Gyro',"AngularSpeed",names(singleDataSet))
+names(singleDataSet) <- gsub('Mag',"Magnitude",names(singleDataSet))
+names(singleDataSet) <- gsub('^t',"TimeDomain.",names(singleDataSet))
+names(singleDataSet) <- gsub('^f',"FrequencyDomain.",names(singleDataSet))
+names(singleDataSet) <- gsub('\\.mean',".Mean",names(singleDataSet))
+names(singleDataSet) <- gsub('\\.std',".StandardDeviation",names(singleDataSet))
+names(singleDataSet) <- gsub('Freq\\.',"Frequency.",names(singleDataSet))
+names(singleDataSet) <- gsub('Freq$',"Frequency",names(singleDataSet))
+
+## 5. Creating a second, independent tidy data set with the average of
+##    each variable for each activity and each subject:
+
+SecondData<-aggregate(. ~Subject + Activity, singleDataSet, mean)
+SecondData<-SecondData[order(SecondData$Subject,SecondData$Activity),]
+write.table(SecondData, file = "tidydata.txt",row.name=FALSE)
